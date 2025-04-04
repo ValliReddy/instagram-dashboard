@@ -173,5 +173,11 @@ def update_charts(n):
     return likes_fig, engagement_fig, follower_fig, pie_fig, hashtag_fig, raw_json
 
 # Run app
+# if __name__ == '__main__':
+#     app.run(debug=True)
+import os
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 8050))  # 8050 is default if not set
+    app.run(host="0.0.0.0", port=port, debug=True)
+
