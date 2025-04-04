@@ -6,15 +6,14 @@ import pandas as pd
 import datetime
 import random
 import json
+import os
 
 # Initialize app
 app = dash.Dash(__name__)
 app.title = "Instagram Real-Time Dashboard"
 
 # Content pools
-content_types = [
-    'Photo', 'Video', 'Reel', 'Story', 'Carousel', 'Live', 'IGTV', 'Clip'
-]
+content_types = ['Photo', 'Video', 'Reel', 'Story', 'Carousel', 'Live', 'IGTV', 'Clip']
 
 hashtag_combos = [
     "#travel #sunset", "#foodie #delicious", "#fashion #ootd", "#gym #fitlife",
@@ -55,20 +54,26 @@ df = pd.DataFrame(columns=[
 ])
 
 # Layout
-app.layout = html.Div(style={'backgroundColor': '#111', 'color': 'white', 'padding': '10px'}, children=[
+app.layout = html.Div(style={
+    'backgroundColor': '#111',
+    'color': 'white',
+    'padding': '10px',
+    'fontFamily': 'Arial'
+}, children=[
     dcc.Interval(id='interval', interval=1000, n_intervals=0),
 
     html.Div([
-        dcc.Graph(id='likes-line', style={'display': 'inline-block', 'width': '49%'}),
-        dcc.Graph(id='engagement-bar', style={'display': 'inline-block', 'width': '49%'}),
-    ]),
+        dcc.Graph(id='likes-line'),
+        dcc.Graph(id='engagement-bar'),
+    ], style={'display': 'flex', 'flexWrap': 'wrap', 'gap': '10px'}),
 
     html.Div([
-        dcc.Graph(id='follower-area', style={'display': 'inline-block', 'width': '49%'}),
-        dcc.Graph(id='content-pie', style={'display': 'inline-block', 'width': '49%'}),
-    ]),
+        dcc.Graph(id='follower-area'),
+        dcc.Graph(id='content-pie'),
+    ], style={'display': 'flex', 'flexWrap': 'wrap', 'gap': '10px'}),
 
-    html.H3("📥 Incoming Instagram Data Feed", style={'marginTop': '40px'}),
+    html.H3("📥 Incoming Instagram Data Feed", style={'marginTop': '30px'}),
+
     html.Pre(id='raw-data', style={
         'backgroundColor': '#222',
         'padding': '10px',
@@ -79,9 +84,7 @@ app.layout = html.Div(style={'backgroundColor': '#111', 'color': 'white', 'paddi
         'fontSize': '12px'
     }),
 
-    html.Div([
-        dcc.Graph(id='hashtag-bar', style={'display': 'inline-block', 'width': '98%'})
-    ])
+    dcc.Graph(id='hashtag-bar')
 ])
 
 @app.callback(
@@ -141,12 +144,12 @@ def update_charts(n):
     ))
     likes_fig.update_layout(title='❤️ Likes Over Time', template='plotly_dark')
 
-    # Engagement Bar Chart (last 10 posts)
+    # Engagement Bar Chart
     engagement_fig = go.Figure()
     recent_df = df.tail(10)
     engagement_fig.add_trace(go.Bar(x=recent_df['Time'], y=recent_df['Comments'], name='💬 Comments'))
     engagement_fig.add_trace(go.Bar(x=recent_df['Time'], y=recent_df['Shares'], name='🔁 Shares'))
-    engagement_fig.update_layout(barmode='group', title='📣 Engagements ', template='plotly_dark')
+    engagement_fig.update_layout(barmode='group', title='📣 Engagements', template='plotly_dark')
 
     # Followers Area Chart
     follower_fig = go.Figure()
@@ -161,23 +164,18 @@ def update_charts(n):
     pie_fig = go.Figure(data=[go.Pie(labels=content_counts.index, values=content_counts.values, hole=0.3)])
     pie_fig.update_layout(title='📂 Content Types', template='plotly_dark')
 
-    # Hashtag Bar Chart (Top 7)
+    # Hashtag Bar Chart
     hashtag_counts = df['Hashtag'].value_counts().nlargest(7)
     hashtag_fig = go.Figure()
     hashtag_fig.add_trace(go.Bar(x=hashtag_counts.index, y=hashtag_counts.values, marker_color='violet'))
     hashtag_fig.update_layout(title='🏷️ Hashtag Frequency', template='plotly_dark')
 
-    # Show latest new data in JSON format
+    # Latest new data
     raw_json = json.dumps(new_data, indent=4)
 
     return likes_fig, engagement_fig, follower_fig, pie_fig, hashtag_fig, raw_json
 
-# Run app
-# if __name__ == '__main__':
-#     app.run(debug=True)
-import os
-
+# Run app on Render
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8050))  # 8050 is default if not set
+    port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port, debug=True)
-
